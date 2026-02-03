@@ -1,0 +1,231 @@
+Please enter a MongoDB connection string (Default: mongodb://localhost/): mongodb
+mongodb
+Current Mongosh Log ID: 6981c14f421f29be83628c9f
+Connecting to:          mongodb://127.0.0.1:27017/mongodb?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+2.6.0
+Using MongoDB:          8.2.1
+Using Mongosh:          2.6.0
+
+For mongosh info see: https://www.mongodb.com/docs/mongodb-shell/
+
+------
+   The server generated these startup warnings when booting
+   2026-02-02T08:42:01.097+05:30: Access control is not enabled for the database. Read and write access to data and configuration is unrestricted
+------
+
+mongodb> use domain_weather
+switched to db domain_weather
+domain_weather> db.Location.insertMany([
+...   { locationid: 1, city: "Bangalore", state: "Karnataka", country: "India", elevation: 920 },
+...   { locationid: 2, city: "Mumbai", state: "Maharashtra", country: "India", elevation: 14 },
+...   { locationid: 3, city: "Delhi", state: "Delhi", country: "India", elevation: 216 }
+... ])
+...
+{
+  acknowledged: true,
+  insertedIds: {
+    '0': ObjectId('6981c250421f29be83628ca0'),
+    '1': ObjectId('6981c250421f29be83628ca1'),
+    '2': ObjectId('6981c250421f29be83628ca2')
+  }
+}
+domain_weather> db.Time.insertMany([
+...   { timeid: 1, date: ISODate("2026-01-10"), year: 2026, season: "Winter" },
+...   { timeid: 2, date: ISODate("2026-03-15"), year: 2026, season: "Summer" },
+...   { timeid: 3, date: ISODate("2026-07-20"), year: 2026, season: "Monsoon" }
+... ])
+{
+  acknowledged: true,
+  insertedIds: {
+    '0': ObjectId('6981c2d8421f29be83628ca3'),
+    '1': ObjectId('6981c2d8421f29be83628ca4'),
+    '2': ObjectId('6981c2d8421f29be83628ca5')
+  }
+}
+domain_weather> db.Weather.insertMany([
+...   { weatherid: 101, temperature: 24.5, humidity: 60, locationid: 1, timeid: 1 },
+...   { weatherid: 102, temperature: 32.0, humidity: 70, locationid: 2, timeid: 2 },
+...   { weatherid: 103, temperature: 26.8, humidity: 85, locationid: 3, timeid: 3 }
+... ])
+{
+  acknowledged: true,
+  insertedIds: {
+    '0': ObjectId('6981c2df421f29be83628ca6'),
+    '1': ObjectId('6981c2df421f29be83628ca7'),
+    '2': ObjectId('6981c2df421f29be83628ca8')
+  }
+}
+domain_weather> db.AirQuality.insertMany([
+...   { airid: 401, aqi: 75, locationid: 1, timeid: 1 },
+...   { airid: 402, aqi: 120, locationid: 2, timeid: 2 },
+...   { airid: 403, aqi: 95, locationid: 3, timeid: 3 }
+... ])
+{
+  acknowledged: true,
+  insertedIds: {
+    '0': ObjectId('6981c2e6421f29be83628ca9'),
+    '1': ObjectId('6981c2e6421f29be83628caa'),
+    '2': ObjectId('6981c2e6421f29be83628cab')
+  }
+}
+domain_weather> db.Precipitation.insertMany([
+...   { precipid: 301, rainfall: 0, cloud: 20, weatherid: 101 },
+...   { precipid: 302, rainfall: 0, cloud: 35, weatherid: 102 },
+...   { precipid: 303, rainfall: 12.5, cloud: 80, weatherid: 103 }
+... ])
+{
+  acknowledged: true,
+  insertedIds: {
+    '0': ObjectId('6981c2ed421f29be83628cac'),
+    '1': ObjectId('6981c2ed421f29be83628cad'),
+    '2': ObjectId('6981c2ed421f29be83628cae')
+  }
+}
+domain_weather> db.Location.aggregate([
+...   { $lookup: { from: "Weather", localField: "locationid", foreignField: "locationid", as: "weather" } }
+... ])
+[
+  {
+    _id: ObjectId('6981c250421f29be83628ca0'),
+    locationid: 1,
+    city: 'Bangalore',
+    state: 'Karnataka',
+    country: 'India',
+    elevation: 920,
+    weather: [
+      {
+        _id: ObjectId('6981c2df421f29be83628ca6'),
+        weatherid: 101,
+        temperature: 24.5,
+        humidity: 60,
+        locationid: 1,
+        timeid: 1
+      }
+    ]
+  },
+  {
+    _id: ObjectId('6981c250421f29be83628ca1'),
+    locationid: 2,
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    country: 'India',
+    elevation: 14,
+    weather: [
+      {
+        _id: ObjectId('6981c2df421f29be83628ca7'),
+        weatherid: 102,
+        temperature: 32,
+        humidity: 70,
+        locationid: 2,
+        timeid: 2
+      }
+    ]
+  },
+  {
+    _id: ObjectId('6981c250421f29be83628ca2'),
+    locationid: 3,
+    city: 'Delhi',
+    state: 'Delhi',
+    country: 'India',
+    elevation: 216,
+    weather: [
+      {
+        _id: ObjectId('6981c2df421f29be83628ca8'),
+        weatherid: 103,
+        temperature: 26.8,
+        humidity: 85,
+        locationid: 3,
+        timeid: 3
+      }
+    ]
+  }
+]
+domain_weather> db.Weather.aggregate([
+...   { $group: { _id: "$locationid", total_records: { $sum: 1 } } }
+... ])
+[
+  { _id: 3, total_records: 1 },
+  { _id: 1, total_records: 1 },
+  { _id: 2, total_records: 1 }
+]
+domain_weather> db.Weather.aggregate([
+...   {
+...     $group: {
+...       _id: null,
+...       min_temperature: { $min: "$temperature" }
+...     }
+...   }
+... ])
+...
+[ { _id: null, min_temperature: 24.5 } ]
+domain_weather> db.AirQuality.aggregate([
+...   {
+...     $group: {
+...       _id: null,
+...       max_aqi: { $max: "$aqi" }
+...     }
+...   }
+... ])
+...
+[ { _id: null, max_aqi: 120 } ]
+domain_weather> db.Weather.insertOne({
+...   weatherid: 104,
+...   temperature: 29.4,
+...   humidity: 65,
+...   locationid: 1,
+...   timeid: 2
+... })
+...
+{
+  acknowledged: true,
+  insertedId: ObjectId('6981c407421f29be83628caf')
+}
+domain_weather> db.Weather.find()
+[
+  {
+    _id: ObjectId('6981c2df421f29be83628ca6'),
+    weatherid: 101,
+    temperature: 24.5,
+    humidity: 60,
+    locationid: 1,
+    timeid: 1
+  },
+  {
+    _id: ObjectId('6981c2df421f29be83628ca7'),
+    weatherid: 102,
+    temperature: 32,
+    humidity: 70,
+    locationid: 2,
+    timeid: 2
+  },
+  {
+    _id: ObjectId('6981c2df421f29be83628ca8'),
+    weatherid: 103,
+    temperature: 26.8,
+    humidity: 85,
+    locationid: 3,
+    timeid: 3
+  },
+  {
+    _id: ObjectId('6981c407421f29be83628caf'),
+    weatherid: 104,
+    temperature: 29.4,
+    humidity: 65,
+    locationid: 1,
+    timeid: 2
+  }
+]
+domain_weather> db.Weather.updateOne(
+...   { weatherid: 101 },
+...   { $set: { temperature: 25.0 } }
+... )
+...
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 1,
+  upsertedCount: 0
+}
+domain_weather> db.Precipitation.deleteOne({ precipid: 301 })
+{ acknowledged: true, deletedCount: 1 }
+domain_weather>
